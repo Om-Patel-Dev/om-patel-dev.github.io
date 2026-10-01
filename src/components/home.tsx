@@ -83,12 +83,24 @@ function WorkShowcase() {
   const railRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
+  // Helper function to handle internal rail shifting without breaking global page scroll
+  const scrollToSlide = (rail: HTMLDivElement, index: number) => {
+    const slides = Array.from(rail.querySelectorAll<HTMLElement>('.terminal-slide'));
+    const targetSlide = slides[index];
+    if (targetSlide) {
+      // Safely scroll ONLY the horizontal rail container box element internally!
+      rail.scrollTo({
+        left: targetSlide.offsetLeft - rail.offsetLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const move = (direction: 1 | -1) => {
     const rail = railRef.current;
     if (!rail) return;
-    const slides = Array.from(rail.querySelectorAll<HTMLElement>('.terminal-slide'));
     const next = Math.max(0, Math.min(projects.length - 1, active + direction));
-    slides[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    scrollToSlide(rail, next);
     setActive(next);
   };
 
@@ -108,20 +120,23 @@ function WorkShowcase() {
       setActive(nearest);
     };
     rail.addEventListener('scroll', update, { passive: true });
+    
     const timer = window.setInterval(() => {
       if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const next = (active + 1) % projects.length;
-      const slide = rail.querySelectorAll<HTMLElement>('.terminal-slide')[next];
-      slide?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      
+      // FIXED: Swapped scrollIntoView out for our internal horizontal container offset shifter
+      scrollToSlide(rail, next);
       setActive(next);
     }, 6500);
+    
     return () => { rail.removeEventListener('scroll', update); window.clearInterval(timer); };
   }, [active]);
 
   return <section className="section-pad no-print" id="work"><Wrap><SectionHeading label="001 / WHAT I'VE BUILT" title="Functionalities I've built" sub="Six areas of real platform work. Watch each one move, then open the details." />
     <div className="carousel-frame">
       <div className="terminal-rail" ref={railRef}>{projects.map((p, i) => <a className={`terminal-slide project-link${i === active ? ' is-active' : ''}`} href={`/work/${p.slug}/`} key={p.slug}>
-        <div className="terminal-window"><div className="window-top"><span /><span /><span /></div><div className="terminal-body">{p.code.map((line, k) => <div className="terminal-line" key={`${line}-${k}`} style={{ '--delay': `${k * .4}s` } as CSSProperties}><em>$</em>{line}</div>)}<span className="terminal-dot" /><span className="terminal-scan" /></div></div>
+        <div className="terminal-window"><div className="window-top"><span /><span /><span /></div><div className="terminal-body">{p.code.map((line, k) => <div className="terminal-line" key={`${line}-${k}`} style={{ '--delay': `${k * .4}s` } as CSSProperties}><em>\$</em>{line}</div>)}<span className="terminal-dot" /><span className="terminal-scan" /></div></div>
         <div className="terminal-caption"><span>00{i + 1}</span><div><h3>{p.title}</h3><p>{p.summary}</p></div><b>↗</b></div>
       </a>)}</div>
       <div className="carousel-controls">
@@ -133,6 +148,7 @@ function WorkShowcase() {
     <div className="art-grid">{projects.map((p, i) => <a className="art-card project-link" href={`/work/${p.slug}/`} key={p.slug}><div className="art-frame"><AbstractArt index={i} /></div><div className="art-meta"><span>00{i + 1} / {p.category}</span><b>{p.title}</b><small>{p.platform}</small></div></a>)}</div>
   </Wrap></section>;
 }
+
 
 function Process() {
   return <section className="dark-section no-print" id="process"><Wrap><SectionHeading dark label="002 / HOW I DEBUG" title="A process that works" sub="The same four steps on a cache mismatch, a migration defect or a content problem." /><div className="process-grid">{processSteps.map(([n, t, p]) => <article key={n}><strong>{n}</strong><h3>{t}</h3><p>{p}</p></article>)}</div></Wrap></section>;
