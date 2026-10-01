@@ -3,7 +3,8 @@ import Lenis from 'lenis';
 import { site } from '../data/site';
 import { quotes } from '../data/quotes';
 
-const nav = [['/', 'Home'], ['/work/', 'Work'], ['/services/', 'Services'], ['/about/', 'About'], ['/writing/', 'Writing'], ['/contact/', 'Contact']];
+// 1. Keep paths simple in the array array definition
+const nav = [['', 'Home'], ['work/', 'Work'], ['services/', 'Services'], ['about/', 'About'], ['writing/', 'Writing'], ['contact/', 'Contact']];
 const REVEAL = '.section-pad .wrap > *:not(.section-heading),.dark-section .wrap > *:not(.section-heading),.orange-banner .wrap > *,.art-card,.guide-card,.large-project,.service-list article,.timeline > div,.about-skills > div,.process-grid article,.github-list a,.next-project,.ct-card,.ct-step';
 
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -14,6 +15,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const path = location.pathname;
   const kind = document.body.dataset.page ?? 'home';
   const quote = quotes[kind] ?? quotes.home;
+
+  // Resolve base prefix dynamically (e.g. '/' or '/portfolio/')
+  const base = import.meta.env.BASE_URL;
 
   useEffect(() => { setDark(document.documentElement.dataset.theme === 'dark'); }, []);
 
@@ -63,16 +67,27 @@ export function SiteShell({ children }: { children: ReactNode }) {
     try { localStorage.setItem('om-theme', next ? 'dark' : 'light'); } catch { /* ignore */ }
   };
 
+  // Helper function to check for active state correctly across directory structures
+  const isActive = (targetPath: string) => {
+    const absoluteTarget = `${base}${targetPath}`;
+    if (targetPath === '') return path === absoluteTarget || path === `${absoluteTarget}index.html`;
+    return path.startsWith(absoluteTarget);
+  };
+
   return <>
     <div className="scroll-progress" />
     <header className="site-nav no-print">
       <div className="nav-shell">
-        <a href="/" className="brand" aria-label="Om Patel home">OM<span>.</span></a>
+        <a href={base} className="brand" aria-label="Om Patel home">OM<span>.</span></a>
         <nav className="nav-links" aria-label="Primary navigation">
-          {nav.map(([href, label]) => <a key={href} href={href} className={path === href || (href !== '/' && path.startsWith(href)) ? 'active' : ''}>{label}</a>)}
+          {nav.map(([href, label]) => (
+            <a key={href} href={`${base}${href}`} className={isActive(href) ? 'active' : ''}>
+              {label}
+            </a>
+          ))}
         </nav>
         <div className="nav-actions">
-          <a className="pill hide-sm" href="/contact/">Let's talk ↗</a>
+          <a className="pill hide-sm" href={`${base}contact/`}>Let's talk ↗</a>
           <button className="pill hide-sm" onClick={toggleTheme} type="button">{dark ? 'Light' : 'Dark'}</button>
           <button className="pill solid" onClick={() => setMenu(true)} type="button" aria-label="Open menu" aria-expanded={menu}>Menu <i aria-hidden="true" /></button>
         </div>
@@ -82,7 +97,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
     <div className={`menu-overlay no-print ${menu ? 'open' : ''}`} aria-hidden={!menu} inert={!menu}>
       <div className="menu-top"><span>OM.</span><button className="menu-close" onClick={() => setMenu(false)} type="button">Close ×</button></div>
       <nav className="menu-links">
-        {nav.map(([href, label], i) => <a key={href} href={href} onClick={() => setMenu(false)} style={{ '--menu-i': i } as CSSProperties}><span className="menu-num">0{i + 1}</span><strong>{label}</strong><span className="menu-arrow">↗</span></a>)}
+        {nav.map(([href, label], i) => (
+          <a key={href} href={`${base}${href}`} onClick={() => setMenu(false)} style={{ '--menu-i': i } as CSSProperties}>
+            <span className="menu-num">0{i + 1}</span><strong>{label}</strong><span className="menu-arrow">↗</span>
+          </a>
+        ))}
       </nav>
       <div className="menu-bottom"><span>Software Developer · Nagpur</span><span className="menu-toggles"><button className="menu-close" onClick={toggleTheme} type="button">{dark ? 'Light mode' : 'Dark mode'}</button><button className="menu-close" onClick={toggleMotion} type="button" aria-pressed={motion}>Motion: {motion ? 'on' : 'off'}</button></span></div>
     </div>
@@ -96,8 +115,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div><blockquote>{quote.q}</blockquote><figcaption>{quote.by}</figcaption></div>
         </figure>
         <div className="foot-row">
-          <a className="brand" href="/">OM<span>.</span></a>
-          <nav aria-label="Footer">{nav.map(([href, label]) => <a key={href} href={href}>{label}</a>)}</nav>
+          <a className="brand" href={base}>OM<span>.</span></a>
+          <nav aria-label="Footer">
+            {nav.map(([href, label]) => (
+              <a key={href} href={`${base}${href}`}>{label}</a>
+            ))}
+          </nav>
           <div className="foot-connect"><a href={site.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a href={site.github} target="_blank" rel="noreferrer">GitHub ↗</a><a href={site.resume}>Résumé ↗</a></div>
         </div>
         <div className="foot-bottom"><span>© 2026 Om Patel · Nagpur, India</span><span className="availability"><i />Open to conversations</span><button type="button" onClick={() => (lenis.current ? lenis.current.scrollTo(0) : scrollTo({ top: 0 }))}>Back to top ↑</button></div>
