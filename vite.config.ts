@@ -8,7 +8,7 @@ const r = (p: string) => resolve(here, p);
 
 export default defineConfig({
   plugins: [react()],
-  base: '/portfolio/', // <-- Add this line right here to prefix subdirectory paths
+  base: '/', // <-- Add this line right here to prefix subdirectory paths
   appType: 'mpa',
   server: { host: '127.0.0.1', strictPort: false },
   preview: { host: '127.0.0.1', strictPort: false },
